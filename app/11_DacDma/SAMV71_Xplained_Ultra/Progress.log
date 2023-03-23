@@ -1,0 +1,10 @@
+CONVERTING	D:\SAMV71x_AFEC-DMA\app\11_DacDma\SAMV71_Xplained_Ultra\Debug\DacDma.elf
+LOADING	D:\SAMV71x_AFEC-DMA\app\11_DacDma\SAMV71_Xplained_Ultra\Debug\DacDma.elf
+ANALYZING
+ANALYZING
+EMULATION	POD: Cortex (JTAG,SWD)   CPU: Cortex-M7
+DEBUG	PROTOCOL: SWD; RESET: SoC
+LOADING 	53152 bytes
+UMI INFO	Loading UMI monitor...
+PROGRAMMING	Atmel ATSAMV7 (2048 kB) (3 sectors)
+UMI INFO	Unloading UMI monitor...
