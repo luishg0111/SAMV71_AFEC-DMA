@@ -147,6 +147,16 @@ static uint8_t _Dac_configureLinkList(Dacc *pDacHw, void *pXdmad, DacCmd *pComma
 		}
 		pBuffer++;
 	}
+	xdmadCfg.mbr_sa = (uint32_t)pBuffer;
+	xdmadCfg.mbr_da = (uint32_t)&(pDacHw->DACC_CDR[pCommand->dacChannel]);
+	xdmadCfg.mbr_ubc = = XDMA_UBC_NVIEW_NDV1 
+					 | XDMA_UBC_NDE_FETCH_EN
+					 | XDMA_UBC_NSEN_UPDATED
+					 | XDMAC_CUBC_UBLEN(4);
+	xdmadCfg.mbr_bc = XDMAC_CBC_BLEN(1024);
+	xdmadCfg.mbr_ds = XDMAC_CDS_MSP_SDS_MSP(0);
+	xdmadCfg.mbr_sus = XDMAC_CDS_MSP_SDS_MSP(0);
+	xdmadCfg.mbr_dus = XDMAC_CDS_MSP_DDS_MSP(0);
 	xdmadCfg.mbr_cfg = XDMAC_CC_TYPE_PER_TRAN 
 					 | XDMAC_CC_MBSIZE_SINGLE 
 					 | XDMAC_CC_DSYNC_MEM2PER 
@@ -159,7 +169,8 @@ static uint8_t _Dac_configureLinkList(Dacc *pDacHw, void *pXdmad, DacCmd *pComma
 					 | XDMAC_CC_PERID(
 						XDMAIF_Get_ChannelNumber(ID_DACC, XDMAD_TRANSFER_TX ));
 	xdmaCndc = XDMAC_CNDC_NDVIEW_NDV1 
-			 | XDMAC_CNDC_NDE_DSCR_FETCH_EN 
+			 //| XDMAC_CNDC_NDE_DSCR_FETCH_EN 
+			 | XDMAC_CNDC_NDE_DSCR_FETCH_DIS 
 			 | XDMAC_CNDC_NDSUP_SRC_PARAMS_UPDATED
 			 | XDMAC_CNDC_NDDUP_DST_PARAMS_UPDATED ;
 	XDMAD_ConfigureTransfer( pXdmad, dacDmaTxChannel, &xdmadCfg, xdmaCndc, 
