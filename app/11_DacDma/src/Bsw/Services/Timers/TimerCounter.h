@@ -33,6 +33,7 @@
 * Declaration of module wide FUNCTIONS
 *****************************************************************************************************/
 void tc_timerConfig( void );
+void tc_timer0Start(void);
 void tc_write_rc( Tc* p_tc, uint32_t ul_channel, uint32_t ul_value );
 /**************************************************************************************************/
 

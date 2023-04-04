@@ -16,6 +16,7 @@
 /*~~~~~~  Headers ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /** Main group of includes for board definitions, chip definitions and type definitions */
+#include 	"board.h"
 #include    "Std_Types.h"
 /** Task scheduler definitions */
 #include    "SchM.h"
@@ -25,9 +26,10 @@
 #include    "Wdg.h"
 /** Button control operations */
 #include    "Button_Ctrl.h"
-#include "board.h"
 /** Floating Point Unit */
 #include    "Fpu.h"
+/** Timer configuration */
+#include    "TimerCounter.h"
 
 /*~~~~~~  Local definitions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -95,7 +97,10 @@ extern int main( void )
 	s32_result = s32_int1 / s32_int2;  
   /************************************************************************************/
     //Enable cache
-	//SCB_EnableDCache();
+	SCB_EnableDCache();
+	/* TC to trigger DAC-DMA*/
+	tc_timer0Config();
+	tc_timer0Start();
 
       /* Initialize DAC */
     dac_initialization();

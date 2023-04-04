@@ -134,6 +134,8 @@ extern uint32_t Dac_SendData( DacDma *pDacd, DacCmd *pCommand);
 #define DACC_GetModeReg(pDACC)                ((pDACC)->DACC_MR)
 #define DACC_CfgTrigger(pDACC, mode)          { (pDACC)->DACC_TRIGR = (mode); }
 
+#define DACC_CfgPeriod(pDACC, value)          { (pDACC)->DACC_MR = | DACC_MR_PRESCALER(value); }
+
 #define DACC_EnableChannel(pDACC, channel)    {(pDACC)->DACC_CHER = (1 << (channel));}
 #define DACC_DisableChannel(pDACC, channel)   {(pDACC)->DACC_CHDR = (1 << (channel));}
 

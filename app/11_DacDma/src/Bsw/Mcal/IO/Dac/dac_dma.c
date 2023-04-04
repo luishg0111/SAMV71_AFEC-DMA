@@ -81,7 +81,7 @@
 
 /*  DMA driver instance */
 static uint32_t dacDmaTxChannel;
-static LinkedListDescriporView1 dmaWriteLinkList[1024]; // Size of DAC data buffer (Original 256)
+static LinkedListDescriporView1 dmaWriteLinkList; // Size of DAC data buffer (Original 256)
 /*----------------------------------------------------------------------------
  *        Local functions
  *----------------------------------------------------------------------------*/
@@ -96,18 +96,18 @@ static uint8_t _DacConfigureDmaChannels( DacDma* pDacd )
 {
 
 	/* Driver initialize */
-	XDMAD_Initialize( pDacd->pXdmad, 0 );
+	XDMAD_Initialize( pDacd->pXdmad, 0 );							/* XDMAD_Initialize(Pointer to xDMA driver instance, Polling DMA transfer: 1. Via XDMAD_IsTransferDone(); or 2. Via XDMAD_Handler().*/
 
-	XDMAD_FreeChannel( pDacd->pXdmad, dacDmaTxChannel);
+	XDMAD_FreeChannel( pDacd->pXdmad, dacDmaTxChannel);				/* XDMAD_FreeChannel(Pointer to xDMA driver instance, ControllerNumber << 8 | ChannelNumber) */
 
 	/* Allocate a DMA channel for DAC0/1 TX. */
 	dacDmaTxChannel = 
-		XDMAD_AllocateChannel( pDacd->pXdmad, XDMAD_TRANSFER_MEMORY, ID_DACC);
+		XDMAD_AllocateChannel( pDacd->pXdmad, XDMAD_TRANSFER_MEMORY, ID_DACC);   /* XDMAD_AllocateChannel(Pointer to xDMA driver instance, Source peripheral ID, Destination peripheral ID) */
 	if ( dacDmaTxChannel == XDMAD_ALLOC_FAILED ) {
 		return DAC_ERROR;
 	}
 
-	if ( XDMAD_PrepareChannel( pDacd->pXdmad, dacDmaTxChannel )) 
+	if ( XDMAD_PrepareChannel( pDacd->pXdmad, dacDmaTxChannel ))	/* XDMAD_PrepareChannel(Pointer to xDMA driver instance, ControllerNumber << 8 | ChannelNumber)*/
 		return DAC_ERROR;
 	return DAC_OK;
 }
@@ -120,42 +120,36 @@ static uint8_t _DacConfigureDmaChannels( DacDma* pDacd )
  * \param size length of buffer
  */
 
-static uint8_t _Dac_configureLinkList(Dacc *pDacHw, void *pXdmad, DacCmd *pCommand)
+static uint8_t _Dac_configureLinkList(Dacc *pDacHw, /*Dacc hardware registers*/
+	void *pXdmad,		/*Pointer to a DacDma instance.*/
+	DacCmd *pCommand) /*This structure is sent to the DAC_SendCommand function to start the transfer. At the end of the transfer, the callback is invoked by the interrupt handler.*/
 {
 	uint32_t xdmaCndc;
-	sXdmadCfg xdmadCfg;
-	uint32_t * pBuffer;
+	sXdmadCfg xdmadCfg;			/*Linked List Descriptor*/
+	COMPILER_ALIGNED(32) uint32_t * pBuffer;				//Per datasheet to avoid issues with DMA
 	/* Setup TX Link List */
-	uint32_t i;		// Modified to count all 1024 data buffer size (original uint8_t)
-	pBuffer = (uint32_t *)pCommand->pTxBuff;
-	for(i = 0; i < pCommand->TxSize; i++){
-		dmaWriteLinkList[i].mbr_ubc = XDMA_UBC_NVIEW_NDV1 
-									| XDMA_UBC_NDE_FETCH_EN
-									| XDMA_UBC_NSEN_UPDATED
-									| XDMAC_CUBC_UBLEN(4);
-		dmaWriteLinkList[i].mbr_sa = (uint32_t)pBuffer;
-		dmaWriteLinkList[i].mbr_da = 
-			(uint32_t)&(pDacHw->DACC_CDR[pCommand->dacChannel]);
-		if ( i == (pCommand->TxSize - 1 )) {
-			if (pCommand->loopback) {
-				dmaWriteLinkList[i].mbr_nda = (uint32_t)&dmaWriteLinkList[0];
-			} else {
-				dmaWriteLinkList[i].mbr_nda = 0;
-			}
-		} else {
-			dmaWriteLinkList[i].mbr_nda = (uint32_t)&dmaWriteLinkList[i+1];
-		}
-		pBuffer++;
-	}
-	xdmadCfg.mbr_cfg = XDMAC_CC_TYPE_PER_TRAN 
-					 | XDMAC_CC_MBSIZE_SINGLE 
-					 | XDMAC_CC_DSYNC_MEM2PER 
-					 | XDMAC_CC_CSIZE_CHK_1 
-					 | XDMAC_CC_DWIDTH_WORD
-					 | XDMAC_CC_SIF_AHB_IF0 
-					 | XDMAC_CC_DIF_AHB_IF1 
-					 | XDMAC_CC_SAM_INCREMENTED_AM 
-					 | XDMAC_CC_DAM_FIXED_AM 
+	pBuffer = (uint32_t *)pCommand->pTxBuff; /* Dac Pointer to the Tx data*/
+
+	/* Configuring UNIQUE descriptor, only 1 is necesary as it can containt the whole lengh of the data as ucBlocks*/ 
+	dmaWriteLinkList.mbr_ubc = XDMA_UBC_NVIEW_NDV1				/*View 1*/
+								| XDMA_UBC_NDE_FETCH_EN			/*MBR_UBC:NDE: Next Descriptor fetch is enabled*/
+								| XDMA_UBC_NSEN_UPDATED			/*MBR_UBC:NSEN: Source parameters are updated when the descriptor is retrieved*/
+								| XDMAC_CUBC_UBLEN(1024);		/*UMBR_UBC:BLEN: Microblock Length*/
+	dmaWriteLinkList.mbr_sa = (uint32_t)pBuffer;				/*MBR_SA Source Address Member*/
+	dmaWriteLinkList.mbr_da =									/*MBR_DA Destination Address Member in this case teh DAC0*/
+		(uint32_t)&(pDacHw->DACC_CDR[pCommand->dacChannel]);	/*(Dacc Offset: 0x1C) Conversion Data Register*/
+	dmaWriteLinkList.mbr_nda = (uint32_t)&dmaWriteLinkList;		/* Point to same decriptor*/
+		
+	/* Configure DMA transfer settings*/
+	xdmadCfg.mbr_cfg = XDMAC_CC_TYPE_PER_TRAN			/*Periferal tansmission*/
+					 | XDMAC_CC_MBSIZE_SINGLE			/*The memory burst size is set to one.*/
+					 | XDMAC_CC_DSYNC_MEM2PER			/*Memory to Peripheral transfer*/
+					 | XDMAC_CC_CSIZE_CHK_1				/*1 data transferred*/
+					 | XDMAC_CC_DWIDTH_WORD				/*The data size is set to 32 bits*/
+					 | XDMAC_CC_SIF_AHB_IF0				/*The data is read through the system bus interface 0*/
+					 | XDMAC_CC_DIF_AHB_IF1				/*The data is written though the system bus interface 1 */
+					 | XDMAC_CC_SAM_INCREMENTED_AM		/*The addressing mode is incremented (the increment size is set to the data size).*/
+					 | XDMAC_CC_DAM_FIXED_AM			/*The address remains unchanged.*/
 					 | XDMAC_CC_PERID(
 						XDMAIF_Get_ChannelNumber(ID_DACC, XDMAD_TRANSFER_TX ));
 	xdmaCndc = XDMAC_CNDC_NDVIEW_NDV1 
@@ -163,7 +157,7 @@ static uint8_t _Dac_configureLinkList(Dacc *pDacHw, void *pXdmad, DacCmd *pComma
 			 | XDMAC_CNDC_NDSUP_SRC_PARAMS_UPDATED
 			 | XDMAC_CNDC_NDDUP_DST_PARAMS_UPDATED ;
 	XDMAD_ConfigureTransfer( pXdmad, dacDmaTxChannel, &xdmadCfg, xdmaCndc, 
-			(uint32_t)&dmaWriteLinkList[0], XDMAC_CIE_LIE);
+			(uint32_t)&dmaWriteLinkList, XDMAC_CIE_LIE);			/*End of Linked List Interrupt Enable Bit*/
 	return DAC_OK;
 }
 

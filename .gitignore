@@ -3,3 +3,4 @@ bsp/
 hal/
 os/
 app/11_DacDma/SAMV71_Xplained_Ultra/Debug
+app/12_DacDma/

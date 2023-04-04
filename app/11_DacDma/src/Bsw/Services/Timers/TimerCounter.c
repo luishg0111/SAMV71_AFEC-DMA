@@ -42,7 +42,7 @@
 
 /// @brief Timer config function
 /// @param  
-void tc_timerConfig( void ) 
+void tc_timer0Config( void ) 
 {
 	/*Enable perpheral for TC0*/
 	PMC_EnablePeripheral(ID_TC0);
@@ -60,6 +60,11 @@ void tc_timerConfig( void )
 	tc_write_rc(TC0, 0, 586);
 }
 
+void tc_timer0Start(void)
+{
+    TC_Start(TC0, 0);
+}
+
 /// @brief Write to TC Register C (RC) on the selected channel.
 /// @param p_tc         Module hardware register base address pointer
 /// @param ul_channel   Channel to write
@@ -68,4 +73,5 @@ void tc_write_rc( Tc* p_tc, uint32_t ul_channel, uint32_t ul_value )
 {
 	p_tc->TC_CHANNEL[ul_channel].TC_RC = ul_value;
 }
+
 

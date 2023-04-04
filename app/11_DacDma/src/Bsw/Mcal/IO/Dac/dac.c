@@ -68,12 +68,11 @@ void dac_initialization(void)
 	{
 		dacBuffer[i] = ecg_resampled_integer[i] << 1;
 	}
-	
+
 	/* Configure trigger mode of the Digital to Analog Converter Controller:
-	Mode = 0 --> Disabling Trigger mode --> Free-running or Max speed mode on the status of DACC_MR.MAXSx
-	Mode = 1 --> Trigger mode enabled 
-	 */
-	/* DACC_CfgTrigger(DACC, 0); */
+	 Enabling the external trigger (external to DACC) and enabling the trigger 1 of the channel 0 */
+	 DACC_CfgTrigger(DACC, DACC_TRIGR_TRGEN0_EN | DACC_TRIGR_TRGSEL0_TRGSEL1);
+
 }
 
 /**
