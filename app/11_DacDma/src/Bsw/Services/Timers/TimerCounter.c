@@ -54,8 +54,7 @@ void tc_timer0Config( void )
 		| TC_CMR_ACPC_TOGGLE			//toggle TIOA on RC match
 	);
 
-	/*RC compare set to trigger at 1ms
-	* Function added un file tc.c */
+	/*RC compare set to trigger at 1ms*/
     //MCK/2/128 = 1706nS per tick, desired period is 1mS so 586 ticks.
 	tc_write_rc(TC0, 0, 586);
 }
